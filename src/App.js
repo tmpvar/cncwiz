@@ -14,13 +14,14 @@ import Probing from './pages/Probing'
 
 
 
+
 class App extends React.Component {
   constructor() {
     super()
 
     this.state = {
       status: {
-        state: 'connecting'
+        state: false
       },
       machinePosition: { x: 0, y: 0, z: 0 },
       realtimeFeed: {
@@ -34,16 +35,23 @@ class App extends React.Component {
         rapids: 100
       }
     }
+
+    this.waiters = {}
   }
 
   componentDidMount() {
     this.props.stream.on('data', (data) => {
       const obj = JSON.parse(data)
-      console.log('message', obj)
+      // console.log('message', obj)
 
       if (obj.type === 'grbl:output') {
 
         const message = obj.data
+
+        if (this.waiters[message.type] && this.waiters[message.type].length) {
+          console.log("handle waiter:", message.type)
+          this.waiters[message.type].shift()(message)
+        }
        // if (message.type === 'probingResult')
 
         if (!message.data) {
@@ -57,8 +65,41 @@ class App extends React.Component {
     })
   }
 
+  send(data) {
+    this.props.stream.write(data + '\r\n')
+  }
+
+  // TODO: specify the alarm or error that would cause this to blow up
+  async waitFor(eventName) {
+    return new Promise((resolve, reject) => {
+      if (!this.waiters[eventName]) {
+        this.waiters[eventName] = []
+      }
+
+      this.waiters[eventName].push(resolve)
+    })
+  }
+
+  async probeToolHeight() {
+    this.send('G53 G0 X-204 Y-18 F7000')
+    this.send('G38.2 Z-150 F800')
+    await this.waitFor('probeResult')
+
+    this.send("G38.4 Z150 F100")
+    const result = await this.waitFor("probeResult")
+
+    // TODO: set the offset here
+    this.send("G10 L20 P0 Z0");
+    this.send("?");
+    this.send('G53 G1 Z0 F2000');
+    this.send('G53 G0 X0 Y0 F7000');
+  }
+
+  home() {
+    this.send('$h\nG54')
+  }
+
   render() {
-    console.log(this.state)
     const state = this.state
     return (
       <div>
@@ -85,6 +126,18 @@ class App extends React.Component {
             rapid override: {state.override.rapids}
           </li>
         </ul>
+
+
+        <div>
+          <h2>Tool Height</h2>
+          <button onClick={_ => this.probeToolHeight()}>Probe NOW</button>
+
+        </div>
+        <div>
+          <h2>Home</h2>
+          <button onClick={_ => this.home()}>HOME NAOW</button>
+
+        </div>
       </div>
     );
   }

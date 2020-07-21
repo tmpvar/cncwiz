@@ -4,6 +4,8 @@ const skateboard = require('skateboard')
 const { loadPartialConfig } = require('@babel/core')
 module.exports = start
 
+const through = require('through2')
+
 function start() {
   const server = {
 
@@ -17,30 +19,33 @@ function start() {
     connections.forEach(stream => stream.write(str))
   }
 
-  skateboard({port: 9876}, (stream) => {
+  skateboard({ port: 9876 }, (stream) => {
     connections.push(stream)
 
     stream.on('end', _ => {
       connections = connections.filter((a) => a !== stream)
     })
 
-    stream.on('data', d => {
+    stream.pipe(through(async (chunk, enc, done) => {
       if (grblArduino.connection) {
-        grblArduino.connection.write(String(d).trim() + '\r\n')
+        const str = String(chunk).trim()
+        console.log("->", str);
+        grblArduino.connection.write(str + "\n");
+        await server.grbl.waitForOk()
+        done()
       }
-    })
+    }))
   })
 
-  grblArduino.events.on('connect', (stream) => {
+  grblArduino.events.on('connect', () => {
     server.grbl = startGrbl((data) => {
       bcast({
-        type: 'grbl:output',
-        data: data
-      })
-    }, stream)
+        type: "grbl:output",
+        data: data,
+      });
+    }, grblArduino);
 
     grblArduino.status()
-    setInterval(() => grblArduino.status(), 5000)
   })
 }
 
