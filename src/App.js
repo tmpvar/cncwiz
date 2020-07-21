@@ -72,7 +72,7 @@ class App extends React.Component {
   command(name) {
     this.send({
       type: 'command',
-      data: name
+      data: name,
     })
   }
 
@@ -98,7 +98,7 @@ class App extends React.Component {
     this.gcode('G53 G0 X-204 Y-18 F7000')
     this.gcode('G38.2 Z-150 F400')
     this.waitFor('probeResult').then(() => {
-      this.gcode("G38.4 Z150 F100")
+      this.gcode("G38.4 Z150 F400")
       this.waitFor("probeResult").then(_ => {
         // TODO: set the offset here
         this.gcode("G10 L20 P1 Z0");
@@ -115,6 +115,10 @@ class App extends React.Component {
 
   reset() {
     this.command('soft-reset')
+  }
+
+  jog(gcode) {
+    this.gcode('$J=' + gcode)
   }
 
   gcodeKeypress(e) {
@@ -136,45 +140,76 @@ class App extends React.Component {
             {state.machinePosition.z})
           </li>
           <li>
-            feedrate: ({state.realtimeFeed.realtimeFeedrate}, {state.realtimeFeed.realtimeSpindle})
+            feedrate: ({state.realtimeFeed.realtimeFeedrate},{" "}
+            {state.realtimeFeed.realtimeSpindle})
           </li>
           <li>
-            work coordinate offset ({state.workcoordinateOffset.x}, {state.workcoordinateOffset.y}, {state.workcoordinateOffset.z})
+            work coordinate offset ({state.workcoordinateOffset.x},{" "}
+            {state.workcoordinateOffset.y}, {state.workcoordinateOffset.z})
           </li>
-          <li>
-            spindle override: {state.override.spindle}
-          </li>
-          <li>
-            feeds override: {state.override.feeds}
-          </li>
-          <li>
-            rapid override: {state.override.rapids}
-          </li>
+          <li>spindle override: {state.override.spindle}</li>
+          <li>feeds override: {state.override.feeds}</li>
+          <li>rapid override: {state.override.rapids}</li>
         </ul>
-
 
         <div>
           <h2>Tool Height</h2>
-          <button onClick={_ => this.probeToolHeight()}>Probe NOW</button>
-
+          <button onClick={(_) => this.probeToolHeight()}>Probe NOW</button>
         </div>
         <div>
           <h2>Home</h2>
-          <button onClick={_ => this.home()}>HOME NAOW</button>
-
+          <button onClick={(_) => this.home()}>HOME NAOW</button>
         </div>
         <div>
           <h2>Home</h2>
-          <button onClick={_ => this.reset()}>RESET</button>
+          <button onClick={(_) => this.reset()}>RESET</button>
         </div>
         <div>
           <h2>Cycle Control</h2>
-          <button onClick={_ => this.command('feed-hold')}>FEED HOLD</button>
-          <button onClick={_ => this.command('cycle-start-resume')}>Cycle Start</button>
+          <button onClick={(_) => this.command("feed-hold")}>FEED HOLD</button>
+          <button onClick={(_) => this.command("cycle-start-resume")}>
+            Cycle Start
+          </button>
         </div>
         <div>
           <h2>GCODE</h2>
-          <input type="text" onKeyDown={e => this.gcodeKeypress(e)}></input>
+          <input type="text" onKeyDown={(e) => this.gcodeKeypress(e)}></input>
+        </div>
+
+        <div>
+          <h2>Jog</h2>
+          <ul>
+            <li>
+              X:
+              <button onClick={(_) => this.jog("G91 X+10 F10000\n")}>+</button>
+              <button onClick={(_) => this.jog("G91 X-10 F10000\n")}>
+                -
+              </button>
+            </li>
+            <li>
+              Y:
+              <button onClick={(_) => this.jog("G91 Y+10 F10000\n")}>
+                +
+              </button>
+              <button onClick={(_) => this.jog("G91 Y-10 F10000\n")}>
+                -
+              </button>
+            </li>
+            <li>
+              Z:
+              <button onClick={(_) => this.jog("G91 Z+10 F10000\n")}>
+                +
+              </button>
+              <button onClick={(_) => this.jog("G91 Z-10 F10000\n")}>
+                -
+              </button>
+            </li>
+            <li>
+              <button onClick={(_) => this.command("jog-cancel")}>
+                Cancel
+              </button>
+            </li>
+          </ul>
         </div>
       </div>
     );

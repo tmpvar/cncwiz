@@ -30,6 +30,7 @@ const commands = {
   'spindle-stop': Buffer.from([0x9E]),
   'toggle-flood-coolant': Buffer.from([0xA0]),
   'toggle-mist-coolant': Buffer.from([0xA1]),
+
 }
 
 
