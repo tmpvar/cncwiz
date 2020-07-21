@@ -18,7 +18,8 @@ function start() {
 
     status() {
       if (this.connection) {
-        this.connection.write('?\n');
+        this.connection.write('?');
+        return true
       }
     },
   }
@@ -40,7 +41,6 @@ function start() {
           serial.connection = null
           serial.events.emit('disconnect')
         })
-
       }
     }).catch((err) => {
       log("ERROR %s", err)

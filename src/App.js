@@ -13,7 +13,7 @@ import Home from './pages/Home'
 import Probing from './pages/Probing'
 
 
-
+var currentId = 0;
 
 class App extends React.Component {
   constructor() {
@@ -49,7 +49,6 @@ class App extends React.Component {
         const message = obj.data
 
         if (this.waiters[message.type] && this.waiters[message.type].length) {
-          console.log("handle waiter:", message.type)
           this.waiters[message.type].shift()(message)
         }
        // if (message.type === 'probingResult')
@@ -66,11 +65,26 @@ class App extends React.Component {
   }
 
   send(data) {
-    this.props.stream.write(data + '\r\n')
+    data.id = currentId ++
+    this.props.stream.write(JSON.stringify(data) + '\n')
+  }
+
+  command(name) {
+    this.send({
+      type: 'command',
+      data: name
+    })
+  }
+
+  gcode(line) {
+    this.send({
+      type: 'gcode',
+      data: line + '\n'
+    })
   }
 
   // TODO: specify the alarm or error that would cause this to blow up
-  async waitFor(eventName) {
+  waitFor(eventName) {
     return new Promise((resolve, reject) => {
       if (!this.waiters[eventName]) {
         this.waiters[eventName] = []
@@ -80,23 +94,34 @@ class App extends React.Component {
     })
   }
 
-  async probeToolHeight() {
-    this.send('G53 G0 X-204 Y-18 F7000')
-    this.send('G38.2 Z-150 F800')
-    await this.waitFor('probeResult')
-
-    this.send("G38.4 Z150 F100")
-    const result = await this.waitFor("probeResult")
-
-    // TODO: set the offset here
-    this.send("G10 L20 P0 Z0");
-    this.send("?");
-    this.send('G53 G1 Z0 F2000');
-    this.send('G53 G0 X0 Y0 F7000');
+  probeToolHeight() {
+    this.gcode('G53 G0 X-204 Y-18 F7000')
+    this.gcode('G38.2 Z-150 F400')
+    this.waitFor('probeResult').then(() => {
+      this.gcode("G38.4 Z150 F100")
+      this.waitFor("probeResult").then(_ => {
+        // TODO: set the offset here
+        this.gcode("G10 L20 P1 Z0");
+        this.gcode('G53 G1 Z0 F2000');
+        this.gcode('G53 G0 X0 Y0 F7000');
+      })
+    })
   }
 
+
   home() {
-    this.send('$h\nG54')
+    this.gcode('$h')
+  }
+
+  reset() {
+    this.command('soft-reset')
+  }
+
+  gcodeKeypress(e) {
+    if (e.key === 'Enter') {
+      this.gcode(e.target.value)
+      e.target.value = ''
+    }
   }
 
   render() {
@@ -137,6 +162,19 @@ class App extends React.Component {
           <h2>Home</h2>
           <button onClick={_ => this.home()}>HOME NAOW</button>
 
+        </div>
+        <div>
+          <h2>Home</h2>
+          <button onClick={_ => this.reset()}>RESET</button>
+        </div>
+        <div>
+          <h2>Cycle Control</h2>
+          <button onClick={_ => this.command('feed-hold')}>FEED HOLD</button>
+          <button onClick={_ => this.command('cycle-start-resume')}>Cycle Start</button>
+        </div>
+        <div>
+          <h2>GCODE</h2>
+          <input type="text" onKeyDown={e => this.gcodeKeypress(e)}></input>
         </div>
       </div>
     );
