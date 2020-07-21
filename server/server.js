@@ -32,8 +32,9 @@ function start() {
     grblArduino.connection.write(sendLine)
     try {
       if (!server.grbl) {
-        return console.log('server.grbl is invalid')
+        throw new Error("Not connected to grbl")
       }
+
       const result = await server.grbl.waitForOk()
       console.log(chalk.green('✔'))
       if (result.length) {
