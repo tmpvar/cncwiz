@@ -18,11 +18,9 @@ class App extends React.Component {
   constructor() {
     super()
 
-    console.log('ctor', this.props)
-
     this.state = {
       status: {
-        state: 'coonnecting'
+        state: 'connecting'
       },
       machinePosition: { x: 0, y: 0, z: 0 },
       realtimeFeed: {
@@ -41,9 +39,14 @@ class App extends React.Component {
   componentDidMount() {
     this.props.stream.on('data', (data) => {
       const obj = JSON.parse(data)
+      console.log('message', obj)
 
       if (obj.type === 'grbl:output') {
-        if (!obj.data.data.status) {
+
+        const message = obj.data
+       // if (message.type === 'probingResult')
+
+        if (!message.data) {
           return
         }
 
@@ -51,7 +54,6 @@ class App extends React.Component {
         newState.raw = obj.data
         this.setState(newState)
       }
-
     })
   }
 
@@ -85,11 +87,8 @@ class App extends React.Component {
         </ul>
       </div>
     );
-
-
   }
 }
-
 
 // function App() {
 //   return (

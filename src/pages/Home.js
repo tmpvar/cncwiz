@@ -7,6 +7,10 @@ export default function Home() {
     <page>
       <h1>home</h1>
       <Link to="/probing">Probing</Link>
+
+
+
+
     </page>
   )
 }

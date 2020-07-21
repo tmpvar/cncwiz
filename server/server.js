@@ -18,10 +18,6 @@ function start() {
   }
 
   skateboard({port: 9876}, (stream) => {
-    bcast({
-      hello: 'world'
-    })
-
     connections.push(stream)
 
     stream.on('end', _ => {
@@ -30,19 +26,8 @@ function start() {
 
     stream.on('data', d => {
       if (grblArduino.connection) {
-        grblArduino.connection.write(d)
+        grblArduino.connection.write(String(d).trim() + '\r\n')
       }
-
-      // try {
-      //   const obj = JSON.parse(d)
-
-      //   if (obj.type === 'grbl:input' && obj.data) {
-      //     if (grblArduino.connection) {
-      //       grblArduino.write(obj.data)
-      //     }
-      // } catch (e) {
-      //   console.error("INVALID MESSAGE: %s", e)
-      // }
     })
   })
 
@@ -54,7 +39,8 @@ function start() {
       })
     }, stream)
 
-    setInterval(() => grblArduino.status(), 500)
+    grblArduino.status()
+    setInterval(() => grblArduino.status(), 5000)
   })
 }
 
