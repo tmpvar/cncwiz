@@ -11,9 +11,13 @@ import {
 
 import Home from './pages/Home'
 import Probing from './pages/Probing'
-
-
+import {vec2, vec3} from 'gl-matrix'
+import circumcenter from 'circumcenter'
 var currentId = 0;
+
+function float(f, places) {
+  return Math.round(f * 1000) / 1000
+}
 
 class App extends React.Component {
   constructor() {
@@ -95,10 +99,11 @@ class App extends React.Component {
   }
 
   probeToolHeight() {
-    this.gcode('G53 G0 X-204 Y-18 F7000')
+    this.gcode('G53 G0 Z0 F7000')
+    this.gcode('G53 G0 X-193 Y-20 F7000')
     this.gcode('G38.2 Z-150 F400')
     this.waitFor('probeResult').then(() => {
-      this.gcode("G38.4 Z150 F400")
+      this.gcode("G38.4 Z10 F400")
       this.waitFor("probeResult").then(_ => {
         // TODO: set the offset here
         this.gcode("G10 L20 P1 Z0");
@@ -106,6 +111,119 @@ class App extends React.Component {
         this.gcode('G53 G0 X0 Y0 F7000');
       })
     })
+  }
+
+  probeTest() {
+    this.gcode('G53 G0 Z0 F700')
+    this.gcode('G53 G0 X-60 Y-31 F700')
+    this.gcode('G53 G0 Z-44 F700')
+    this.gcode('G38.2 x150 F100')
+    this.waitFor('probeResult').then(() => {
+      this.gcode("G38.4 X-150 F10")
+      this.waitFor("probeResult").then(r => {
+        console.log(r)
+        // TODO: set the offset here
+        // this.gcode("G10 L20 P1 Z0");
+        this.gcode('G53 G1 Z0 F2000');
+        this.gcode('G53 G0 X0 Y0 F7000');
+      })
+    })
+  }
+
+  probeBore() {
+
+    // this.gcode("G53 G0 Z0 F700");
+    // this.gcode("G53 G0 X-42.219 Y-29.328 F700");
+    // // this.gcode(`G53 G0 X-10  Y0 F700`);
+    // // this.gcode("G53 G0 X-42.219 Y-29.328 F700");
+    // this.gcode(`G3 I5 J0 X-42.219 Y-29.328 F700`);
+    // // this.gcode(`G53 G0 X-${float(39.3 + 2.919)}  Y-29.328 F700`);
+    // // this.gcode("G53 G0 X-42.219 Y-29.328 F700");
+    // // this.gcode('G53 G0 Z-45 F700')
+    // // this.gcode("G53 G0 Z-45 F700");
+    // // this.gcode(`G3 X-${float(39.3 + 2.919)} Y-29.328 I0 J-2.919`);
+
+    // return
+    function runSerial(tasks) {
+      return tasks.reduce((promiseChain, currentTask) => {
+        return promiseChain.then(chainResults =>
+          currentTask().then(currentResult =>
+            [...chainResults, currentResult]
+          )
+        );
+      }, Promise.resolve([])).then(arrayOfResults => {
+        return arrayOfResults.filter(Boolean)
+      });
+    }
+    const p = (axis, dir) => {
+      return () => {
+        return new Promise((resolve, reject) => {
+          this.gcode(`G38.2 ${axis}${dir * 500} F400`)
+          this.waitFor('probeResult').then(resultEnter => {
+            this.gcode(`G38.4 ${axis}${-dir * 500} F100`)
+            this.waitFor("probeResult").then(resultExit => {
+              resolve({
+                enter: resultEnter.data,
+                exit: resultExit.data
+              })
+            })
+          })
+        })
+      }
+    }
+
+    const move = (gcode) => {
+      return () => {
+        return new Promise((resolve, reject) => {
+          this.gcode(gcode)
+          resolve()
+        })
+      }
+    }
+
+    this.gcode('G53 G0 Z0 F700')
+    this.gcode('G53 G0 X-40 Y-30 F700')
+    // this.gcode('G53 G0 Z-45 F700')
+    this.gcode('G53 G0 Z-45 F700')
+
+
+
+    runSerial([
+      p('x', 1),
+      move('G1 X-40 Y-30 F1000'),
+      p('y', -1),
+      move('G1 X-40 Y-30 F1000'),
+      p('x', -1),
+      move('G1 X-40 Y-30 F1000'),
+    ]).then(results => {
+
+      const points = results.map((r) => {
+        const pos = r.exit.location
+        console.log(pos.x, pos.y)
+        return [pos.x, pos.y]
+      })
+
+      const c = circumcenter(points)
+      const r = vec2.distance(points[0], c)
+      const sr = r * 1
+
+      const arcStart = `X${float(c[0], 3)} Y${float(c[1]+sr, 3)}`
+      // this.gcode(`G53 G1 ${center} F2000`);
+      this.gcode(`G53 G1 ${arcStart} F2000`);
+      this.gcode(`G53 G1 Z-45 F2000`);
+
+      for (var i=0; i<10; i++) {
+        // this.gcode(`G3 I5 J0 X-42.219 Y-29.328 F700`);
+        this.gcode(`G3 ${arcStart} I0 J-${float(sr, 3)} F4000`);
+      }
+
+      this.gcode(`G53 G1 X${float(c[0], 3)} Y${float(c[1], 3)} F2000`)
+
+      console.log('done', points, c, r)
+      this.gcode('G53 G1 Z0 F2000');
+      this.gcode('G53 G0 X0 Y0 F7000');
+    })
+
   }
 
 
@@ -136,8 +254,8 @@ class App extends React.Component {
         <ul>
           <li>status: {state.status.state}</li>
           <li>
-            machine: ({state.machinePosition.x}, {state.machinePosition.y},{" "}
-            {state.machinePosition.z})
+            machine: ({float(state.machinePosition.x)}, {float(state.machinePosition.y)},{" "}
+            {float(state.machinePosition.z)})
           </li>
           <li>
             feedrate: ({state.realtimeFeed.realtimeFeedrate},{" "}
@@ -155,6 +273,11 @@ class App extends React.Component {
         <div>
           <h2>Tool Height</h2>
           <button onClick={(_) => this.probeToolHeight()}>Probe NOW</button>
+        </div>
+        <div>
+          <h2>Probe test</h2>
+          <button onClick={(_) => this.probeTest()}>Probe Test</button>
+          <button onClick={(_) => this.probeBore()}>Probe Bore</button>
         </div>
         <div>
           <h2>Home</h2>

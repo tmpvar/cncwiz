@@ -37,7 +37,7 @@ const commands = {
 function create(broadcast, grblArduino) {
   const parser = new GrblParser()
   let waitForOk = []
-
+  let waitForStatus = []
   const obj = {
     parser: parser,
     async waitForOk(timeout) {
@@ -58,6 +58,14 @@ function create(broadcast, grblArduino) {
         }
       })
     },
+
+    status() {
+      return new Promise((resolve, reject) => {
+        grblArduino.connection.write('?')
+        waitForStatus.push(resolve)
+      })
+    },
+
     commands: commands
   }
   // monkeypatch grbl-parser so we get all events out.
@@ -65,6 +73,11 @@ function create(broadcast, grblArduino) {
   parser.dispatcher.dispatch = (name, data) => {
     if (name === 'initialize') {
       tick()
+    }
+
+    if (name === 'status') {
+      waitForStatus.forEach(resolve => resolve(data.data))
+      waitForStatus = []
     }
 
     if (data.type === 'success' && waitForOk.length) {
@@ -95,10 +108,22 @@ function create(broadcast, grblArduino) {
   }
 
   let ticker = null
+  let lastJog = Number.MAX_VALUE
   async function tick() {
     clearTimeout(ticker)
-    grblArduino.status()
-    ticker = setTimeout(tick, 500)
+    const result = await obj.status()
+
+    let timeout = 500
+
+    if (result.status && result.status.state === "Jog") {
+      lastJog = Date.now()
+    }
+
+    if (Date.now() - lastJog < 10000) {
+      timeout = 0
+    }
+
+    ticker = setTimeout(tick, timeout)
   }
 
   grblArduino.events.on('disconnect', _ => {
