@@ -35,31 +35,36 @@ function start() {
         throw new Error("Not connected to grbl")
       }
 
-      const result = await server.grbl.waitForOk()
+      const results = await server.grbl.waitForOk()
       console.log(chalk.green('✔'))
-      if (result.length) {
-        result.forEach((r, i) => {
-          let prefix = ''
-          if (i === result.length - 1) {
-            prefix = chalk.green('⬅   ')
+      if (results.length) {
+        results.forEach((r, i) => {
+          let prefix = "";
+          if (i === results.length - 1) {
+            prefix = chalk.green("⬅   ");
           } else {
-            prefix = '    '
+            prefix = "    ";
           }
 
-          console.log(prefix + chalk.green(r.input))
-        })
+          console.log(prefix + chalk.green(r.input));
+        });
 
         bcast({
-          type: 'result',
+          type: "result",
           id: o.id,
-          result: result
-        })
+          input: sendLine.trim(),
+          results: results,
+        });
       }
 
     } catch (e) {
       console.log('❌')
       console.log('   ' + chalk.red(e.input))
-      console.log(chalk.red('⬅  ' + e.data.message))
+      if (e.data && e.data.message) {
+        console.log(chalk.red('⬅  ' + e.data.message))
+      } else {
+        console.log(chalk.red(e.stack));
+      }
       bcast({
         type: 'error',
         data: e

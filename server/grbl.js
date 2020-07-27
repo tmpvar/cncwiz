@@ -30,7 +30,6 @@ const commands = {
   'spindle-stop': Buffer.from([0x9E]),
   'toggle-flood-coolant': Buffer.from([0xA0]),
   'toggle-mist-coolant': Buffer.from([0xA1]),
-
 }
 
 
@@ -96,6 +95,7 @@ function create(broadcast, grblArduino) {
       // don't output status message results (spam)
       if (data.input[0] !== '<') {
         console.log("⬅  %s", data.input.trim());
+
       }
     } else {
       // filter out status messages that may of occurred during probing or similar.

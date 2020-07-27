@@ -5,8 +5,12 @@
 
   --color-user-change: #D30C63;
   --color-user-change-highlight: #F50E73;
+  --color-idle-background: #30333b;
+
+  --color-information: #0C82C6;
 
   --color-user-alert: #CF3214;
+  --color-lightest: #BBBBBB;
   --color-light: #8594AE;
   --color-lighter: #707070;
   --color-mid: #434343;
@@ -19,12 +23,22 @@ body {
   color: var(--color-section-text);
 }
 
+input {
+  font-size: 13px;
+}
+
+input::selection {
+  color: var(--color-lightest);
+  background: var(--color-user-change-highlight);
+}
+
 .panel {
   background-color: var(--color-background);
   border-radius: 10px;
   box-shadow: 0px 3px 6px rgba(0, 0, 0, 60%);
   margin: 10px;
-  padding: 10px;
+  padding: 16px 8px;
+
   display:block;
   position: relative;
 }
@@ -33,15 +47,17 @@ body {
   font-size: 20px;
   line-height: 15px;
   font-weight: lighter;
+  text-transform: uppercase;
   margin:0;
-  margin-top: 1px;
+  /* margin-top: 1px; */
   margin-bottom: 2px;
 }
 
 .panel h2 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: lighter;
   margin: 0;
+  text-transform: uppercase;
 }
 
 .panel button {
@@ -55,144 +71,6 @@ body {
   display:block;
 
 }
-
-
-/* JOG PANEL */
-
-#jog.panel {
-  height: 236px;
-  width: 164px;
-}
-
-#jog.panel .inputs {
-  position: absolute;
-  left: 10px;
-  top: 40px;
-}
-
-#jog.panel .inputs input {
-  width: 44px;
-  margin-right: 4px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  border: 1px solid var(--color-light);
-  background-color: var(--color-dark);
-  color: var(--color-user-change-highlight);
-  text-align: right;
-  box-shadow: 0px 3px 6px rgba(0, 0, 0, 60%);
-}
-
-#jog.panel .inputs span {
-  color: var(--color-lighter);
-  font-size: 12px;
-  font-weight: bold;
-}
-
-#jog.panel .inputs .distance {
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: 500px;
-}
-
-#jog.panel .inputs .speed {
-  position: absolute;
-  left: 88px;
-  top: 0px;
-  width: 80px;
-}
-
-#jog.panel .inputs .speed span {
-  display:inline-block;
-  line-height: 9px;
-  font-size: 10px;
-  position: relative;
-  top: 2px;
-}
-
-#jog.panel .buttons {
-  position: absolute;
-  left: 21px;
-  top: 78px;
-}
-
-#jog.panel button {
-  position: absolute;
-  padding: 0;
-  padding-top: 3px;
-  padding-left: 2px;
-}
-
-
-#jog.panel .buttons button:focus {
-  outline: var(--color-user-change-highlight) solid 1px;
-}
-
-#jog.panel button svg {
-  fill: var(--color-user-change);
-  stroke: var(--color-user-change-highlight);
-}
-
-#jog.panel button.up {
-
-}
-
-#jog.panel button.down svg {
-  transform: rotate(180deg) translate(1px);
-}
-
-#jog.panel button.left svg {
-  transform: rotate(-90deg);
-}
-
-#jog.panel button.right svg {
-  transform: rotate(90deg);
-}
-
-#jog.panel button.up.y-axis {
-  left: var(--spacing-jog-button);
-  top: 0px;
-}
-
-#jog.panel button.down.y-axis {
-  left: var(--spacing-jog-button);
-  top: calc(var(--spacing-jog-button) * 2);
-}
-
-#jog.panel button.left.x-axis {
-  left: 0px;
-  top: var(--spacing-jog-button);
-}
-
-#jog.panel button.right.x-axis {
-  left: calc(var(--spacing-jog-button) * 2);
-  top: var(--spacing-jog-button);
-}
-
-#jog.panel button.up.z-axis {
-  left: calc(var(--spacing-jog-button) * 3 + 16px);
-  top: 0px;
-}
-#jog.panel button.down.z-axis {
-  left: calc(var(--spacing-jog-button) * 3 + 16px);
-  top: calc(var(--spacing-jog-button) * 2);
-}
-
-#jog.panel button.stop {
-  font-size: 24px;
-  text-transform: uppercase;
-  font-weight: bolder;
-  color: var(--color-user-alert);
-  position: absolute;
-  width: 86%;
-  height: 40px;
-  bottom: 6%;
-  left: 7%;
-
-  border: 1px solid var(--color-mid);
-
-}
-
 
 a, a.hover {
   text-decoration: none;

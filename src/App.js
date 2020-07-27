@@ -1,30 +1,15 @@
 import React from 'react';
-import logo from './icon.png';
 import './App.css';
 
 
-import {
-  Switch,
-  Link,
-  Route
-} from "react-router-dom";
-
-import Home from './pages/Home'
-import Probing from './pages/Probing'
-import Arrow from './svg/arrow'
-import {vec2, vec3} from 'gl-matrix'
+import {vec2} from 'gl-matrix'
 import circumcenter from 'circumcenter'
 
 import JogPanel from './panels/Jog'
-var currentId = 0;
+import StatusPanel from './panels/Status'
 
-function float(f, places) {
+function float(f) {
   return Math.round(f * 1000) / 1000
-}
-
-
-class Machine {
-
 }
 
 class App extends React.Component {
@@ -59,20 +44,15 @@ class App extends React.Component {
     })
   }
 
-  send(data) {
-    data.id = currentId ++
-    this.props.stream.write(JSON.stringify(data) + '\n')
-  }
-
   command(name) {
-    this.send({
+    this.props.machine.send({
       type: 'command',
       data: name,
     })
   }
 
   gcode(line) {
-    this.send({
+    this.props.machine.send({
       type: 'gcode',
       data: line + '\n'
     })
@@ -241,7 +221,7 @@ class App extends React.Component {
       <div>
 
         <JogPanel machine={machine} />
-
+        <StatusPanel machine={machine} />
         <h1>status</h1>
         <ul>
           <li>status: {state.status.state}</li>

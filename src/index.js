@@ -10,39 +10,64 @@ import { v4 as uuid } from 'uuid'
 import { EventEmitter } from 'events'
 
 
-class Machine extends EventEmitter{
+class Machine extends EventEmitter {
   constructor(stream) {
-    super()
+    super();
 
     this.send = function (data) {
       data.id = uuid();
       stream.write(JSON.stringify(data) + "\n");
+      return data.id
+    };
+
+    const eventWaiters = {};
+    const resultWaiters = {};
+
+    // TODO: specify the alarm or error that would cause this to blow up
+    this.waitForEvent = function (eventName) {
+      return new Promise((resolve, reject) => {
+        if (!eventWaiters[eventName]) {
+          eventWaiters[eventName] = [];
+        }
+
+        eventWaiters[eventName].push(resolve);
+      });
     }
 
-    this.waiters = {}
+    this.waitForResult = function (id) {
+      return new Promise((resolve, reject) => {
+        resultWaiters[id] = resolve;
+      });
+    }
 
-    stream.on('data', (data) => {
+    stream.on("data", (data) => {
       const obj = JSON.parse(data);
 
-       if (obj.type === 'grbl:output') {
+      if (obj.type === "result" && resultWaiters[obj.id]) {
+        resultWaiters[obj.id](obj)
+        delete resultWaiters[obj.id]
+        return;
+      }
 
-        const message = obj.data
+      if (obj.type === "grbl:output") {
+        const message = obj.data;
 
-        if (this.waiters[message.type] && this.waiters[message.type].length) {
-          this.waiters[message.type].shift()(message)
+        if (
+          eventWaiters[message.type] &&
+          eventWaiters[message.type].length
+        ) {
+          eventWaiters[message.type].shift()(message);
         }
-        // if (message.type === 'probingResult')
 
         if (!message.data) {
-          return
+          return;
         }
 
-        this.emit('data', obj)
+        this.emit("data", obj);
+        this.emit(message.type, obj)
       }
-    })
+    });
   }
-
-
 
   command(name) {
     this.send({
@@ -52,21 +77,18 @@ class Machine extends EventEmitter{
   }
 
   gcode(line) {
-    this.send({
+    return this.send({
       type: "gcode",
       data: line + "\n",
     });
   }
 
-  // TODO: specify the alarm or error that would cause this to blow up
-  waitFor(eventName) {
-    return new Promise((resolve, reject) => {
-      if (!this.waiters[eventName]) {
-        this.waiters[eventName] = [];
-      }
+  statusCoordinates() {
+    return this.waitForResult(this.gcode("$#"))
+  }
 
-      this.waiters[eventName].push(resolve);
-    });
+  statusGcodeState() {
+    return this.waitForResult(this.gcode("$G"));
   }
 
   jog(gcode) {
@@ -79,12 +101,13 @@ class Machine extends EventEmitter{
 }
 
 const stream = skateboard({ port: 9876 })
-
+const machine = new Machine(stream);
+window.machine = machine
 
 ReactDOM.render(
   <React.StrictMode>
     <BrowserRouter>
-      <App machine={new Machine(stream)} stream={stream} />
+      <App machine={machine} stream={stream} />
     </BrowserRouter>
   </React.StrictMode>,
   document.getElementById("root")

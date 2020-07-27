@@ -1,6 +1,7 @@
 import React from 'react'
 
 import Arrow from '../svg/arrow'
+import './Jog.css'
 
 export default class JogPanel extends React.Component {
   constructor() {
@@ -41,8 +42,6 @@ export default class JogPanel extends React.Component {
 
   render() {
     const state = this.state
-    const machine = this.props.machine
-    console.log(this.props)
     return (
       <div className="panel" id="jog">
         <h1>JOG</h1>
@@ -58,7 +57,6 @@ export default class JogPanel extends React.Component {
           <section className="speed">
             <input
               value={state.speed}
-              onChange={(e) => this.updateJogSpeed(e)}
               onChange={(e) => this.updateJogSpeed(e)}
             ></input>
             <span>
