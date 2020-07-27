@@ -14,10 +14,17 @@ import Probing from './pages/Probing'
 import Arrow from './svg/arrow'
 import {vec2, vec3} from 'gl-matrix'
 import circumcenter from 'circumcenter'
+
+import JogPanel from './panels/Jog'
 var currentId = 0;
 
 function float(f, places) {
   return Math.round(f * 1000) / 1000
+}
+
+
+class Machine {
+
 }
 
 class App extends React.Component {
@@ -39,38 +46,16 @@ class App extends React.Component {
         feeds: 100,
         rapids: 100
       },
-      jog: {
-        distance: 1,
-        speed: 2000
-      }
-
     }
 
     this.waiters = {}
   }
 
   componentDidMount() {
-    this.props.stream.on('data', (data) => {
-      const obj = JSON.parse(data)
-      // console.log('message', obj)
-
-      if (obj.type === 'grbl:output') {
-
-        const message = obj.data
-
-        if (this.waiters[message.type] && this.waiters[message.type].length) {
-          this.waiters[message.type].shift()(message)
-        }
-       // if (message.type === 'probingResult')
-
-        if (!message.data) {
-          return
-        }
-
-        const newState = Object.assign({}, this.state, obj.data.data);
-        newState.raw = obj.data
-        this.setState(newState)
-      }
+    this.props.machine.on('data', obj => {
+      const newState = Object.assign({}, this.state, obj.data.data);
+      newState.raw = obj.data
+      this.setState(newState)
     })
   }
 
@@ -192,8 +177,6 @@ class App extends React.Component {
     // this.gcode('G53 G0 Z-45 F700')
     this.gcode('G53 G0 Z-45 F700')
 
-
-
     runSerial([
       p('x', 1),
       move('G1 X-40 Y-30 F1000'),
@@ -216,7 +199,7 @@ class App extends React.Component {
       const arcStart = `X${float(c[0], 3)} Y${float(c[1]+sr, 3)}`
       // this.gcode(`G53 G1 ${center} F2000`);
       this.gcode(`G53 G1 ${arcStart} F2000`);
-      this.gcode(`G53 G1 Z-4c5 F2000`);
+      this.gcode(`G53 G1 Z-45 F2000`);
 
       for (var i=0; i<10; i++) {
         // this.gcode(`G3 I5 J0 X-42.219 Y-29.328 F700`);
@@ -231,7 +214,6 @@ class App extends React.Component {
     })
 
   }
-
 
   home() {
     this.gcode('$h')
@@ -252,72 +234,13 @@ class App extends React.Component {
     }
   }
 
-  updateJogDistance(e) {
-    this.setState(Object.assign({}, this.state, {
-      jog: Object.assign({}, this.state.jog, {
-        distance: e.target.value
-      })
-    }))
-  }
-
-  updateJogSpeed(e) {
-    this.setState(Object.assign({}, this.state, {
-      jog: Object.assign({}, this.state.jog, {
-        speed: e.target.value
-      })
-    }))
-  }
-
-  runJog(axis, dir) {
-    return () => {
-      const state = this.state
-      const neg = dir < 0 ? '-' : ''
-      this.jog(`G91 ${axis} ${neg}${state.jog.distance} F${state.jog.speed}`)
-    }
-  }
-
-  cancelJog() {
-    return () => {
-      this.command('jog-cancel')
-    }
-  }
-
   render() {
     const state = this.state
+    const machine = this.props.machine
     return (
       <div>
-        <div className="panel" id="jog">
-          <h1>JOG</h1>
-          <section className="inputs">
-            <section className="distance">
-              <input
-                value={state.jog.distance}
-                onChange={e => this.updateJogDistance(e) }
-                onKeyDown={e => this.updateJogDistance(e) }
-              ></input><span>mm</span>
-            </section>
-            <section className="speed">
-              <input
-                value={state.jog.speed}
-                onChange={e => this.updateJogSpeed(e) }
-                onChange={e => this.updateJogSpeed(e) }
-              ></input><span>mm<br />min</span>
-            </section>
 
-            </section>
-          <section className="buttons">
-            <button className="up y-axis" onClick={this.runJog('y', -1)}><Arrow /></button>
-            <button className="down y-axis" onClick={this.runJog('y', 1)}><Arrow /></button>
-            <button className="left x-axis" onClick={this.runJog('x', -1)}><Arrow /></button>
-            <button className="right x-axis" onClick={this.runJog('x', 1)}><Arrow /></button>
-
-            <button className="up z-axis" onClick={this.runJog('z', 1)}><Arrow /></button>
-            <button className="down z-axis" onClick={this.runJog('z', -1)}><Arrow /></button>
-          </section>
-
-          <button className="stop" onClick={this.cancelJog()}>Stop</button>
-
-        </div>
+        <JogPanel machine={machine} />
 
         <h1>status</h1>
         <ul>
