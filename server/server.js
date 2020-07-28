@@ -112,6 +112,8 @@ function start() {
           default:
             log('ERROR: unknown message type: "%s"', o.type)
         }
+      } else {
+        log('ERROR: attempted to write into a void connection')
       }
 
     }))

@@ -52,6 +52,7 @@ class NumericInput extends React.Component {
     return (
       <input
         value={state.value}
+        readOnly
         //onChange={(e) => this.updateValue(e)}
         //onKeyDown={(e) => this.updateValue(e)}
         // onKeyDown={this.handleKeydown()}

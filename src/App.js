@@ -44,20 +44,6 @@ class App extends React.Component {
     })
   }
 
-  command(name) {
-    this.props.machine.send({
-      type: 'command',
-      data: name,
-    })
-  }
-
-  gcode(line) {
-    this.props.machine.send({
-      type: 'gcode',
-      data: line + '\n'
-    })
-  }
-
   // TODO: specify the alarm or error that would cause this to blow up
   waitFor(eventName) {
     return new Promise((resolve, reject) => {
@@ -70,51 +56,39 @@ class App extends React.Component {
   }
 
   probeToolHeight() {
-    this.gcode('G53 G0 Z0 F7000')
-    this.gcode('G53 G0 X-193 Y-20 F7000')
-    this.gcode('G38.2 Z-150 F400')
-    this.waitFor('probeResult').then(() => {
-      this.gcode("G38.4 Z10 F400")
-      this.waitFor("probeResult").then(_ => {
+    const machine = this.props.machine
+    machine.gcode('G53 G0 Z0 F7000')
+    machine.gcode('G53 G0 X-193 Y-20 F7000')
+    const probeIntoId = machine.gcode('G38.2 Z-150 F400')
+    machine.waitForResult(probeIntoId).then(() => {
+      const probeAwayId = machine.gcode("G38.4 Z10 F400")
+      machine.waitForResult(probeAwayId).then(_ => {
         // TODO: set the offset here
-        this.gcode("G10 L20 P1 Z0");
-        this.gcode('G53 G1 Z0 F2000');
-        this.gcode('G53 G0 X0 Y0 F7000');
+        machine.gcode("G10 L20 P1 Z0");
+        machine.gcode('G53 G1 Z0 F2000');
+        machine.gcode('G53 G0 X0 Y0 F7000');
       })
     })
   }
 
   probeTest() {
-    this.gcode('G53 G0 Z0 F700')
-    this.gcode('G53 G0 X-60 Y-31 F700')
-    this.gcode('G53 G0 Z-44 F700')
-    this.gcode('G38.2 x150 F100')
-    this.waitFor('probeResult').then(() => {
-      this.gcode("G38.4 X-150 F10")
-      this.waitFor("probeResult").then(r => {
-        console.log(r)
-        // TODO: set the offset here
-        // this.gcode("G10 L20 P1 Z0");
-        this.gcode('G53 G1 Z0 F2000');
-        this.gcode('G53 G0 X0 Y0 F7000');
+    const machine = this.props.machine
+    machine.gcode('G53 G0 Z0 F700')
+    machine.gcode('G53 G0 X-60 Y-31 F700')
+    machine.gcode('G53 G0 Z-44 F700')
+    const probeInto = machine.gcode('G38.2 x150 F100')
+    machine.waitForResult(probeInto).then(() => {
+      const probeAway = machine.gcode("G38.4 X-150 F10")
+      machine.waitForResult(probeAway).then(r => {
+        machine.gcode('G53 G1 Z0 F2000');
+        machine.gcode('G53 G0 X0 Y0 F7000');
       })
     })
   }
 
   probeBore() {
+    const machine = this.props.machine
 
-    // this.gcode("G53 G0 Z0 F700");
-    // this.gcode("G53 G0 X-42.219 Y-29.328 F700");
-    // // this.gcode(`G53 G0 X-10  Y0 F700`);
-    // // this.gcode("G53 G0 X-42.219 Y-29.328 F700");
-    // this.gcode(`G3 I5 J0 X-42.219 Y-29.328 F700`);
-    // // this.gcode(`G53 G0 X-${float(39.3 + 2.919)}  Y-29.328 F700`);
-    // // this.gcode("G53 G0 X-42.219 Y-29.328 F700");
-    // // this.gcode('G53 G0 Z-45 F700')
-    // // this.gcode("G53 G0 Z-45 F700");
-    // // this.gcode(`G3 X-${float(39.3 + 2.919)} Y-29.328 I0 J-2.919`);
-
-    // return
     function runSerial(tasks) {
       return tasks.reduce((promiseChain, currentTask) => {
         return promiseChain.then(chainResults =>
@@ -129,16 +103,17 @@ class App extends React.Component {
     const p = (axis, dir) => {
       return () => {
         return new Promise((resolve, reject) => {
-          this.gcode(`G38.2 ${axis}${dir * 500} F400`)
-          this.waitFor('probeResult').then(resultEnter => {
-            this.gcode(`G38.4 ${axis}${-dir * 500} F100`)
-            this.waitFor("probeResult").then(resultExit => {
-              resolve({
-                enter: resultEnter.data,
-                exit: resultExit.data
+          const probeInto = machine.gcode(`G38.2 ${axis}${dir * 500} F400`)
+          machine.waitForResult(probeInto).then(resultEnter => {
+            console.log(resultEnter)
+              const probeAway = machine.gcode(`G38.4 ${axis}${-dir * 500} F100`)
+              machine.waitForResult(probeAway).then(resultExit => {
+                resolve({
+                  enter: resultEnter.results[0].data,
+                  exit: resultExit.results[0].data
+                })
               })
             })
-          })
         })
       }
     }
@@ -146,16 +121,15 @@ class App extends React.Component {
     const move = (gcode) => {
       return () => {
         return new Promise((resolve, reject) => {
-          this.gcode(gcode)
+          machine.gcode(gcode)
           resolve()
         })
       }
     }
 
-    this.gcode('G53 G0 Z0 F700')
-    this.gcode('G53 G0 X-40 Y-30 F700')
-    // this.gcode('G53 G0 Z-45 F700')
-    this.gcode('G53 G0 Z-45 F700')
+    machine.gcode('G53 G0 Z0 F700')
+    machine.gcode('G53 G0 X-40 Y-30 F700')
+    machine.gcode('G53 G0 Z-45 F700')
 
     runSerial([
       p('x', 1),
@@ -167,6 +141,7 @@ class App extends React.Component {
     ]).then(results => {
 
       const points = results.map((r) => {
+
         const pos = r.exit.location
         console.log(pos.x, pos.y)
         return [pos.x, pos.y]
@@ -178,38 +153,38 @@ class App extends React.Component {
 
       const arcStart = `X${float(c[0], 3)} Y${float(c[1]+sr, 3)}`
       // this.gcode(`G53 G1 ${center} F2000`);
-      this.gcode(`G53 G1 ${arcStart} F2000`);
-      this.gcode(`G53 G1 Z-45 F2000`);
+      machine.gcode(`G53 G1 ${arcStart} F2000`);
+      machine.gcode(`G53 G1 Z-45 F2000`);
 
       for (var i=0; i<10; i++) {
-        // this.gcode(`G3 I5 J0 X-42.219 Y-29.328 F700`);
-        this.gcode(`G3 ${arcStart} I0 J-${float(sr, 3)} F4000`);
+        machine.gcode(`G3 ${arcStart} I0 J-${float(sr, 3)} F4000`);
       }
 
-      this.gcode(`G53 G1 X${float(c[0], 3)} Y${float(c[1], 3)} F2000`)
+      machine.gcode(`G53 G1 X${float(c[0], 3)} Y${float(c[1], 3)} F2000`)
 
       console.log('done', points, c, r)
-      this.gcode('G53 G1 Z0 F2000');
-      this.gcode('G53 G0 X0 Y0 F7000');
+      machine.gcode('G53 G1 Z0 F2000');
+      machine.gcode('G53 G0 X0 Y0 F7000');
     })
 
   }
 
   home() {
-    this.gcode('$h')
+    console.log('home')
+    this.props.machine.gcode('$h')
   }
 
   reset() {
-    this.command('soft-reset')
+    this.props.machine.command('soft-reset')
   }
 
   jog(gcode) {
-    this.gcode('$J=' + gcode)
+    this.props.machine.gcode('$J=' + gcode)
   }
 
   gcodeKeypress(e) {
     if (e.key === 'Enter') {
-      this.gcode(e.target.value)
+      this.props.machine.gcode(e.target.value)
       e.target.value = ''
     }
   }
@@ -261,8 +236,8 @@ class App extends React.Component {
         </div>
         <div>
           <h2>Cycle Control</h2>
-          <button onClick={(_) => this.command("feed-hold")}>FEED HOLD</button>
-          <button onClick={(_) => this.command("cycle-start-resume")}>
+          <button onClick={(_) => machine.command("feed-hold")}>FEED HOLD</button>
+          <button onClick={(_) => machine.command("cycle-start-resume")}>
             Cycle Start
           </button>
         </div>
@@ -300,7 +275,7 @@ class App extends React.Component {
               </button>
             </li>
             <li>
-              <button onClick={(_) => this.command("jog-cancel")}>
+              <button onClick={(_) => machine.command("jog-cancel")}>
                 Cancel
               </button>
             </li>

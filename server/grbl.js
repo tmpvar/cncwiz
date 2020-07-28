@@ -61,7 +61,7 @@ function create(broadcast, grblArduino) {
     status() {
       return new Promise((resolve, reject) => {
         grblArduino.connection.write('?')
-        waitForStatus.push(resolve)
+        waitForStatus.push({resolve, reject})
       })
     },
 
@@ -78,7 +78,7 @@ function create(broadcast, grblArduino) {
     }
 
     if (name === 'status') {
-      waitForStatus.forEach(resolve => resolve(data.data))
+      waitForStatus.forEach(({resolve}) => resolve(data.data))
       waitForStatus = []
     }
 
@@ -112,25 +112,35 @@ function create(broadcast, grblArduino) {
 
   let ticker = null
   let lastJog = Number.MAX_VALUE
-  async function tick() {
+  function tick() {
     clearTimeout(ticker)
-    const result = await obj.status()
+    const result = obj.status().then((result) => {
+      let timeout = 500
 
-    let timeout = 500
+      if (result.status && result.status.state === "Jog") {
+        lastJog = Date.now()
+      }
 
-    if (result.status && result.status.state === "Jog") {
-      lastJog = Date.now()
-    }
+      if (Date.now() - lastJog < 10000) {
+        timeout = 0
+      }
 
-    if (Date.now() - lastJog < 10000) {
-      timeout = 0
-    }
-
-    ticker = setTimeout(tick, timeout)
+      ticker = setTimeout(tick, timeout)
+    }).catch((err) => {
+      log("WARN: status returned error (%s)", err)
+    })
   }
 
   grblArduino.events.on('disconnect', _ => {
     clearTimeout(ticker)
+
+    while (waitForOk.length) {
+      waitForOk.shift().reject()
+    }
+
+    while (waitForStatus.length) {
+      waitForStatus.shift().reject()
+    }
   })
 
   grblArduino.connection.pipe(split()).pipe(
