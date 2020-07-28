@@ -10,7 +10,7 @@
 #jog.panel .inputs {
   position: absolute;
   left: 10px;
-  top: 40px;
+  top: 45px;
 }
 
 #jog.panel .inputs input {
@@ -55,8 +55,8 @@
 
 #jog.panel .buttons {
   position: absolute;
-  left: 21px;
-  top: 78px;
+  left: 18px;
+  top: 92px;
 }
 
 #jog.panel button {

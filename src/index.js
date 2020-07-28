@@ -20,8 +20,8 @@ class Machine extends EventEmitter {
       return data.id
     };
 
-    const eventWaiters = {};
-    const resultWaiters = {};
+    let eventWaiters = {};
+    let resultWaiters = {};
 
     // TODO: specify the alarm or error that would cause this to blow up
     this.waitForEvent = function (eventName) {
@@ -40,8 +40,25 @@ class Machine extends EventEmitter {
       });
     }
 
+    stream.on('disconnection', () => {
+      this.emit('disconnect')
+      eventWaiters = {}
+      resultWaiters = {}
+    })
+
     stream.on("data", (data) => {
       const obj = JSON.parse(data);
+
+      if (obj.type === 'grbl:disconnect') {
+        console.log('grbl:disconnect')
+        this.emit('disconnect')
+
+      }
+
+      if (obj.type === 'grbl:connect') {
+        console.log('grbl:connect')
+        this.emit('connect')
+      }
 
       if (obj.type === "result" && resultWaiters[obj.id]) {
         resultWaiters[obj.id](obj)

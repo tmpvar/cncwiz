@@ -72,6 +72,9 @@ function create(broadcast, grblArduino) {
   parser.dispatcher.dispatch = (name, data) => {
     if (name === 'initialize') {
       tick()
+      broadcast({
+        type: 'grbl:connect'
+      })
     }
 
     if (name === 'status') {

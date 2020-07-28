@@ -1,5 +1,6 @@
 #status.panel {
   width: 230px;
+  height: 555px;
 }
 
 #status.panel h2 {
@@ -24,6 +25,22 @@
 
 #status.panel .status.alarm {
   color: var(--color-user-alert);
+}
+
+#status.panel.alarm p {
+  margin-top: 18px;
+  color: var(--color-user-alert);
+}
+
+#status.panel .alarm svg {
+  position:absolute;
+  top: 6px;
+  right: 6px
+}
+
+#status.panel .alarm svg rect {
+  fill: var(--color-user-alert);
+   color: var(--color-user-alert);
 }
 
 #status.panel .index {

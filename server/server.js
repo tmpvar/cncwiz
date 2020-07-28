@@ -125,6 +125,12 @@ function start() {
       });
     }, grblArduino);
   })
+
+  grblArduino.events.on('disconnect', () => {
+    bcast({
+      type: "grbl:disconnect",
+    });
+  })
 }
 
 
