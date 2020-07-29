@@ -245,69 +245,10 @@ class App extends React.Component {
           <h2>GCODE</h2>
           <input type="text" onKeyDown={(e) => this.gcodeKeypress(e)}></input>
         </div>
-
-        <div>
-          <h2>Jog</h2>
-          <ul>
-            <li>
-              X:
-              <button onClick={(_) => this.jog("G91 X+10 F10000\n")}>+</button>
-              <button onClick={(_) => this.jog("G91 X-10 F10000\n")}>
-                -
-              </button>
-            </li>
-            <li>
-              Y:
-              <button onClick={(_) => this.jog("G91 Y+10 F10000\n")}>
-                +
-              </button>
-              <button onClick={(_) => this.jog("G91 Y-10 F10000\n")}>
-                -
-              </button>
-            </li>
-            <li>
-              Z:
-              <button onClick={(_) => this.jog("G91 Z+10 F10000\n")}>
-                +
-              </button>
-              <button onClick={(_) => this.jog("G91 Z-10 F10000\n")}>
-                -
-              </button>
-            </li>
-            <li>
-              <button onClick={(_) => machine.command("jog-cancel")}>
-                Cancel
-              </button>
-            </li>
-          </ul>
-        </div>
       </div>
     );
   }
 }
 
-// function App() {
-//   return (
-//     <div className="App">
-//       <header className="App-header">
-//         <img src={logo} className="App-logo" alt="logo" />
-
-//         <div>
-
-//         </div>
-//       </header>
-//       <content>
-//         <Switch>
-//           <Route exact path="/">
-//             <Home />
-//           </Route>
-//           <Route path="/probing">
-//             <Probing />
-//           </Route>
-//         </Switch>
-//       </content>
-//     </div>
-//   );
-// }
 
 export default App;

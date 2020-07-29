@@ -67,6 +67,7 @@ function start() {
       }
       bcast({
         type: 'error',
+        id: o.id,
         data: e
       })
 

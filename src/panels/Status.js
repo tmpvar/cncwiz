@@ -7,6 +7,10 @@ function toFixed(n, places) {
   return Math.round(n * e) / e;
 }
 
+function displayFloat(n) {
+  return toFixed(n, 2).toFixed(2)
+}
+
 class NumericInput extends React.Component {
 
   state = { value: this.props.value }
@@ -51,7 +55,7 @@ class NumericInput extends React.Component {
     const state = this.state;
     return (
       <input
-        value={state.value}
+        value={displayFloat(state.value, 2)}
         readOnly
         //onChange={(e) => this.updateValue(e)}
         //onKeyDown={(e) => this.updateValue(e)}
@@ -97,7 +101,7 @@ function CoordinateLine(props) {
       {props.pos.x !== undefined ? (
         <NumericInput
           key={props.name + "_x"}
-          value={abs.x + props.pos.x}
+          value={props.pos.x}
           onChange={onChange(props.index, "X")}
           onBlur={clearSelection}
         />
@@ -106,7 +110,7 @@ function CoordinateLine(props) {
       {props.pos.y !== undefined ? (
         <NumericInput
           key={props.name + "_y"}
-          value={abs.y + props.pos.y}
+          value={props.pos.y}
           onChange={onChange(props.index, "Y")}
           onBlur={clearSelection}
         />
@@ -115,7 +119,7 @@ function CoordinateLine(props) {
       {props.pos.z !== undefined ? (
         <NumericInput
           key={props.name + "_z"}
-          value={abs.z + props.pos.z}
+          value={props.pos.z}
           onChange={onChange(props.index, "Z")}
           onBlur={clearSelection}
         />
@@ -177,6 +181,8 @@ export default class StatusPanel extends React.Component {
       machine.statusGcodeState()
     ]).then(([coords, gcodeState]) => {
 
+      this.ticker = setTimeout(this.pollStatus.bind(this), 500);
+
       const obj = {}
       coords.results.forEach((result) => {
         switch (result.type) {
@@ -204,7 +210,6 @@ export default class StatusPanel extends React.Component {
         }
       })
 
-      this.ticker = setTimeout(this.pollStatus.bind(this), 500);
       const activeWCS = gcodeState.results[0].data.codes.filter(Boolean).find((code) => code.name === "WCS").code;
 
       this.setState(Object.assign(
@@ -215,6 +220,14 @@ export default class StatusPanel extends React.Component {
           activeWCS: activeWCS
         }
       ))
+    }).catch((e) => {
+      if (e.data && e.data.code === 8) {
+        this.ticker = setTimeout(this.pollStatus.bind(this), 500);
+        return
+      }
+
+      throw e
+
     })
   }
 

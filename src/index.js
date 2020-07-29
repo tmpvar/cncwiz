@@ -36,7 +36,7 @@ class Machine extends EventEmitter {
 
     this.waitForResult = function (id) {
       return new Promise((resolve, reject) => {
-        resultWaiters[id] = resolve;
+        resultWaiters[id] = { resolve, reject };
       });
     }
 
@@ -48,7 +48,6 @@ class Machine extends EventEmitter {
 
     stream.on("data", (data) => {
       const obj = JSON.parse(data);
-
       if (obj.type === 'grbl:disconnect') {
         console.log('grbl:disconnect')
         this.emit('disconnect')
@@ -61,7 +60,13 @@ class Machine extends EventEmitter {
       }
 
       if (obj.type === "result" && resultWaiters[obj.id]) {
-        resultWaiters[obj.id](obj)
+        resultWaiters[obj.id].resolve(obj)
+        delete resultWaiters[obj.id]
+        return;
+      }
+
+      if (obj.type === "error" && resultWaiters[obj.id]) {
+        resultWaiters[obj.id].reject(obj.data)
         delete resultWaiters[obj.id]
         return;
       }
