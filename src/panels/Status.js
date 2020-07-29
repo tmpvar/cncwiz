@@ -11,62 +11,11 @@ function displayFloat(n) {
   return toFixed(n, 2).toFixed(2)
 }
 
-class NumericInput extends React.Component {
-
-  state = { value: this.props.value }
-
-  change(v) {
-    this.props.onChange(parseFloat(v || "0"));
-  }
-
-  handleKeydown() {
-    return (e) => {
-      this.setState({
-        value: e.target.value,
-      });
-    };
-  }
-
-  handleChange() {
-    return (e) => {
-      this.props.value !== e.target.value && this.change(e.target.value);
-    };
-  }
-
-  updateValue(e) {
-    this.setState({
-      value: e.target.value,
-    });
-
-    if (e.type === "keydown" && e.key === "Enter") {
-      this.change(e.target.value);
-    }
-  }
-
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    if (prevProps.value !== this.props.value) {
-      this.setState({
-        value: this.props.value
-      })
-    }
-  }
-
-  render() {
-    const state = this.state;
-    return (
-      <input
-        value={displayFloat(state.value, 2)}
-        readOnly
-        //onChange={(e) => this.updateValue(e)}
-        //onKeyDown={(e) => this.updateValue(e)}
-        // onKeyDown={this.handleKeydown()}
-        // // onChange={this.handleChange() }
-        //onBlur={this.handleChange()}
-      ></input>
-    );
-  }
+function NumericOutput(props) {
+  return (
+    <output>{displayFloat(props.value)}</output>
+  );
 }
-
 
 function CoordinateLine(props) {
   const className = props.name === props.activeWCS
@@ -99,7 +48,7 @@ function CoordinateLine(props) {
         <span className="name">{props.name}</span>
       </span>
       {props.pos.x !== undefined ? (
-        <NumericInput
+        <NumericOutput
           key={props.name + "_x"}
           value={props.pos.x}
           onChange={onChange(props.index, "X")}
@@ -108,7 +57,7 @@ function CoordinateLine(props) {
       ) : null}
 
       {props.pos.y !== undefined ? (
-        <NumericInput
+        <NumericOutput
           key={props.name + "_y"}
           value={props.pos.y}
           onChange={onChange(props.index, "Y")}
@@ -117,7 +66,7 @@ function CoordinateLine(props) {
       ) : null}
 
       {props.pos.z !== undefined ? (
-        <NumericInput
+        <NumericOutput
           key={props.name + "_z"}
           value={props.pos.z}
           onChange={onChange(props.index, "Z")}
@@ -177,58 +126,60 @@ export default class StatusPanel extends React.Component {
     clearTimeout(this.ticker)
     const machine = this.props.machine
     Promise.all([
+      machine.statusMain(),
       machine.statusCoordinates(),
-      machine.statusGcodeState()
-    ]).then(([coords, gcodeState]) => {
-
-      this.ticker = setTimeout(this.pollStatus.bind(this), 500);
-
-      const obj = {}
-      coords.results.forEach((result) => {
-        switch (result.type) {
-          case 'gcodeSystem':
-            const coords = result.data.coordinates;
-            const pos = {}
-            obj[result.data.code] = pos
-            if (coords.x !== undefined) {
-              pos.x = toFixed(coords.x, 2);
-            }
-
-            if (coords.y !== undefined) {
-              pos.y = toFixed(coords.y, 2);
-            }
-
-            if (coords.z !== undefined) {
-              pos.z = toFixed(coords.z, 2);
-            }
-            break;
-          case 'probeResult':
-            obj.PRB = result.data.location;
-          break;
-          default:
-            return
-        }
-      })
-
-      const activeWCS = gcodeState.results[0].data.codes.filter(Boolean).find((code) => code.name === "WCS").code;
-
-      this.setState(Object.assign(
-        {},
-        obj,
-        {
-          coordinates: obj,
-          activeWCS: activeWCS
-        }
-      ))
-    }).catch((e) => {
-      if (e.data && e.data.code === 8) {
+      machine.statusGcodeState(),
+    ])
+      .then(([status, coords, gcodeState]) => {
+        console.log(status);
         this.ticker = setTimeout(this.pollStatus.bind(this), 500);
-        return
-      }
 
-      throw e
+        const obj = {};
+        coords.results.forEach((result) => {
+          switch (result.type) {
+            case "gcodeSystem":
+              const coords = result.data.coordinates;
+              const pos = {};
+              obj[result.data.code] = pos;
+              if (coords.x !== undefined) {
+                pos.x = toFixed(coords.x, 2);
+              }
 
-    })
+              if (coords.y !== undefined) {
+                pos.y = toFixed(coords.y, 2);
+              }
+
+              if (coords.z !== undefined) {
+                pos.z = toFixed(coords.z, 2);
+              }
+              break;
+            case "probeResult":
+              obj.PRB = result.data.location;
+              break;
+            default:
+              return;
+          }
+        });
+
+        const activeWCS = gcodeState.results[0].data.codes
+          .filter(Boolean)
+          .find((code) => code.name === "WCS").code;
+
+        this.setState(
+          Object.assign({}, obj, {
+            coordinates: obj,
+            activeWCS: activeWCS,
+          })
+        );
+      })
+      .catch((e) => {
+        if (e.data && e.data.code === 8) {
+          this.ticker = setTimeout(this.pollStatus.bind(this), 500);
+          return;
+        }
+
+        throw e;
+      });
   }
 
   componentDidMount() {

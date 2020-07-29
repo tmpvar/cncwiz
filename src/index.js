@@ -17,7 +17,7 @@ class Machine extends EventEmitter {
     this.send = function (data) {
       data.id = uuid();
       stream.write(JSON.stringify(data) + "\n");
-      return data.id
+      return data.id;
     };
 
     let eventWaiters = {};
@@ -32,52 +32,54 @@ class Machine extends EventEmitter {
 
         eventWaiters[eventName].push(resolve);
       });
-    }
+    };
 
     this.waitForResult = function (id) {
       return new Promise((resolve, reject) => {
         resultWaiters[id] = { resolve, reject };
       });
-    }
+    };
 
-    stream.on('disconnection', () => {
-      this.emit('disconnect')
-      eventWaiters = {}
-      resultWaiters = {}
-    })
+    this.reset = function () {
+      eventWaiters = {};
+      resultWaiters = {};
+      this.command("soft-reset");
+    };
+
+    stream.on("disconnection", () => {
+      this.emit("disconnect");
+      eventWaiters = {};
+      resultWaiters = {};
+    });
 
     stream.on("data", (data) => {
       const obj = JSON.parse(data);
-      if (obj.type === 'grbl:disconnect') {
-        console.log('grbl:disconnect')
-        this.emit('disconnect')
-
+      if (obj.type === "grbl:disconnect") {
+        console.log("grbl:disconnect");
+        this.emit("disconnect");
       }
 
-      if (obj.type === 'grbl:connect') {
-        console.log('grbl:connect')
-        this.emit('connect')
+      if (obj.type === "grbl:connect") {
+        console.log("grbl:connect");
+        this.emit("connect");
       }
 
       if (obj.type === "result" && resultWaiters[obj.id]) {
-        resultWaiters[obj.id].resolve(obj)
-        delete resultWaiters[obj.id]
+        resultWaiters[obj.id].resolve(obj);
+        delete resultWaiters[obj.id];
         return;
       }
 
       if (obj.type === "error" && resultWaiters[obj.id]) {
-        resultWaiters[obj.id].reject(obj.data)
-        delete resultWaiters[obj.id]
+        resultWaiters[obj.id].reject(obj.data);
+        delete resultWaiters[obj.id];
         return;
       }
 
       if (obj.type === "grbl:output") {
         const message = obj.data;
 
-        if (
-          eventWaiters[message.type] &&
-          eventWaiters[message.type].length
-        ) {
+        if (eventWaiters[message.type] && eventWaiters[message.type].length) {
           eventWaiters[message.type].shift()(message);
         }
 
@@ -86,7 +88,7 @@ class Machine extends EventEmitter {
         }
 
         this.emit("data", obj);
-        this.emit(message.type, obj)
+        this.emit(message.type, obj);
       }
     });
   }
@@ -105,8 +107,12 @@ class Machine extends EventEmitter {
     });
   }
 
+  statusMain() {
+    return this.waitForResult(this.gcode("?"));
+  }
+
   statusCoordinates() {
-    return this.waitForResult(this.gcode("$#"))
+    return this.waitForResult(this.gcode("$#"));
   }
 
   statusGcodeState() {

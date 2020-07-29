@@ -86,9 +86,10 @@
   vertical-align: text-top;
 }
 
-#status.panel input {
+#status.panel output {
   width: 52px;
   margin-right: 3px;
+  display: inline-block;
   font-weight: normal;
   font-size: 15px;
   line-height: 21px;
@@ -103,8 +104,8 @@
   /* box-shadow: 0px 3px 6px rgba(0, 0, 0, 60%); */
 }
 
-#status.panel input:focus {
+/* #status.panel input:focus {
   outline: none;
   box-shadow: 0px 0px 1px var(--color-user-change-highlight);
   color: var(--color-user-change-highlight);
-}
+} */

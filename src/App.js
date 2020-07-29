@@ -7,7 +7,7 @@ import circumcenter from 'circumcenter'
 
 import JogPanel from './panels/Jog'
 import StatusPanel from './panels/Status'
-
+import ProgramPanel from './panels/Program'
 function float(f) {
   return Math.round(f * 1000) / 1000
 }
@@ -34,14 +34,6 @@ class App extends React.Component {
     }
 
     this.waiters = {}
-  }
-
-  componentDidMount() {
-    this.props.machine.on('data', obj => {
-      const newState = Object.assign({}, this.state, obj.data.data);
-      newState.raw = obj.data
-      this.setState(newState)
-    })
   }
 
   // TODO: specify the alarm or error that would cause this to blow up
@@ -197,13 +189,10 @@ class App extends React.Component {
 
         <JogPanel machine={machine} />
         <StatusPanel machine={machine} />
+        <ProgramPanel machine={machine} />
+
         <h1>status</h1>
         <ul>
-          <li>status: {state.status.state}</li>
-          <li>
-            machine: ({float(state.machinePosition.x)}, {float(state.machinePosition.y)},{" "}
-            {float(state.machinePosition.z)})
-          </li>
           <li>
             feedrate: ({state.realtimeFeed.realtimeFeedrate},{" "}
             {state.realtimeFeed.realtimeSpindle})

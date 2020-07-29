@@ -1,0 +1,49 @@
+
+
+#program.panel {
+  width: 466px;
+  height: 421px;
+}
+
+#program.panel .hidden {
+  display:none;
+}
+
+#program.panel .file-selector {
+  margin-top: 16px;
+}
+
+#program.panel .file-selector button {
+  display: inline-block;
+  margin-right: 16px;
+}
+
+/* #program.panel .gcode {
+  border: 1px solid var(--color-light);
+  height: 320px;
+  overflow-y: auto;
+  font-family: monospace;
+  margin-top: 16px;
+} */
+
+/* #program.panel .gcode ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+} */
+
+/* #program.panel .gcode .line {
+  font-size: 14px;
+}
+*/
+#program.panel .gcode {
+  margin-top: 16px;
+  font-family: monospace;
+}
+
+#program.panel .gcode .line-number {
+  display: inline-block;
+  text-align: right;
+  margin-right: 8px;
+  color: var(--color-mid);
+}

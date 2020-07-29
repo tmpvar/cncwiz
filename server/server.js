@@ -48,18 +48,19 @@ function start() {
 
           console.log(prefix + chalk.green(r.input));
         });
-
-        bcast({
-          type: "result",
-          id: o.id,
-          input: sendLine.trim(),
-          results: results,
-        });
       }
 
+      bcast({
+        type: "result",
+        id: o.id,
+        input: sendLine.trim(),
+        results: results,
+      });
     } catch (e) {
       console.log('❌')
-      console.log('   ' + chalk.red(e.input))
+      e.input
+      ? console.log('   ' + chalk.red(e.input))
+      : console.log('   ' + chalk.red(e))
       if (e.data && e.data.message) {
         console.log(chalk.red('⬅  ' + e.data.message))
       } else {
